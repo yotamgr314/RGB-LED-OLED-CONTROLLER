@@ -1,0 +1,6 @@
+{
+  "files.associations": {
+    "oledc_colors.h": "c",
+    "oledc.h": "c"
+  }
+}
