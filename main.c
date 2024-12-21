@@ -1,15 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "System/system.h" // NOTE: Contains implementd system initialization functions (like SYSTEM_Initialize()), which configure microcontroller peripherals like clocks, timers, and other hardware components
-#include "System/delay.h" // NOTE: Used for adding delays, usually __delay_ms() or __delay_us() functions.
-                          // for example:
-                          // 01) Timing-sensitive hardware:
-                          // 02) Waiting for sensors.
-                          // 03) displays
-                          // 04) or other hardware devices to complete an operation (e.g., clearing the OLED screen or waiting for a signal from an input pin).
-#include "oledDriver/oledC.h" // NOTE: Provides functions for controlling the OLED screen, like oledC_DrawString, oledC_sendColorInt, and more.
-#include "oledDriver/oledC_colors.h"// NOTE: Defines color constants like OLEDC_COLOR_ORANGE and OLEDC_COLOR_GREEN.
-#include "oledDriver/oledC_shapes.h" // NOTE:  Provides functions for shapes and drawing on the OLED, as well as the oledC_DrawString function.
+#include "System/system.h"
+#include "System/delay.h"
+#include "oledDriver/oledC.h"
+#include "oledDriver/oledC_colors.h"
+#include "oledDriver/oledC_shapes.h"
 
 typedef unsigned char DISPLAY_MODE;
 #define MODE_NORMAL 0
