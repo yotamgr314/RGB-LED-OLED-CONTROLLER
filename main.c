@@ -19,11 +19,10 @@ typedef unsigned char MODE; // NOTE: Define a typedef for display modes.
 #define INVERSE !NORMAL
 
 
-static uint16_t background_color; // NOTE: Stores the background color for the OLED screen in a 16 bits unsigned int  - a color is packed into 16 bits where the first 5 bits are for red Red, the next 6 bits are for Green and the next remaining 5 bits are for Blue.
+static uint16_t background_color;// NOTE: Stores the background color for the OLED screen in a 16 bits unsigned int  - a color is packed into 16 bits where the first 5 bits are for red Red, the next 6 bits are for Green and the next remaining 5 bits are for Blue.
 
 
 // TRANSFORMING POTENTIOMETER ANALOG INPUT INTO DIGITAL.
-
 //EXPLANATION STARTS
 // 01) When working with a potentiometer (or any analog sensor), the goal is to convert the analog voltage (continuous signal) into a digital value that the microcontroller can process.
 //     This is done using an Analog-to-Digital Converter (ADC).
@@ -31,24 +30,25 @@ static uint16_t background_color; // NOTE: Stores the background color for the O
 
 void User_Initialize(void)
 {
-  //Configure A/D Control Registers (ANSB & AD1CONx SFRs)
-    TRISBbits.TRISB12 = 1; //NOTE: Set RB12 as input, 1 for input. 0 for output.
-    ANSBbits.ANSB12 = 1; // NOTE ANSB (Analog select register) - Configure the RB12 Bit as an analog input. By default, all pins are digital unless explicitly configured as analog
-    AD1CON1bits.SSRC = 0; // NOTE:  Manual sample mode
-    AD1CON1bits.FORM = 0; // NOTE:Selects the output format of the ADC result (integer, signed integer, fractional) 0 for unsigned int, 1 for signed, and 2 for fractional
-    AD1CON1bits.ASAM = 0;// NOTE: Enables (1) or disables (0) automatic sampling after a conversion is complete.
-    AD1CON1bits.ADSIDL = 0;
-    AD1CON1bits.DMABM = 0;
-    AD1CON1bits.DMAEN = 0; 
-    AD1CON1bits.MODE12 = 0;
+  //Configure A/D Control Registers (ANSB & AD1CONx SFRs).
+    TRISBbits.TRISB12 = 1;//PDF EX3 COPY PASTE NOTE:Set RB12 as input, 1 for input. 0 for output.
+    ANSBbits.ANSB12 = 1; //PDF EX3 COPY PASTE NOTE:ANSB (Analog select register) - Configure the RB12 Bit as an analog input. By default, all pins are digital unless explicitly configured as analog
+    AD1CON1bits.SSRC = 0;//PDF EX3 COPY PASTE NOTE:Manual sample mode
+    AD1CON1bits.FORM = 0;//PDF EX3 COPY PASTE NOTE: Selects the output format of the ADC result (integer, signed integer, fractional) 0 for unsigned int, 1 for signed, and 2 for fractional
+    AD1CON1bits.ASAM = 0;//PDF EX3 COPY PASTE NOTE: Enables (1) or disables (0) automatic sampling after a conversion is complete.
+    AD1CON1bits.ADSIDL = 0;//PDF EX3 COPY PASTE
+    AD1CON1bits.DMABM = 0;//PDF EX3 COPY PASTE
+    AD1CON1bits.DMAEN = 0; //PDF EX3 COPY PASTE
+    AD1CON1bits.MODE12 = 0;//PDF EX3 COPY PASTE
 
 
-    AD1CON2 = 0x0000;
-    AD1CON3bits.ADCS = 0xFF;
-    AD1CON3bits.SAMC = 0x10;
-    AD1CON3bits.ADRC = 0x00;
-    AD1CON3bits.EXTSAM = 0x00;
-    AD1CON3bits.PUMPEN = 0x00;
+    
+    AD1CON2 = 0x00;// PDF EX3 COPY PASTE NOTE:PDD required AD1CON2(use 0)
+    AD1CON3bits.ADCS = 0xFF;//PDF EX3 COPY PASTE
+    AD1CON3bits.SAMC = 0x10;// PDF EX3 COPY PASTE
+    AD1CON3bits.ADRC = 0x00;//PDF EX3 COPY PASTE
+    AD1CON3bits.EXTSAM = 0x00;//PDF EX3 COPY PASTE
+    AD1CON3bits.PUMPEN = 0x00;//PDF EX3 COPY PASTE
 
   //Configure S1/S2 and LED1/LED2 IO directions (TRISA)
     TRISAbits.TRISA11 = 1; // NOTE: RA11 which is the bit that mapped to S1 buttonm and it is configured as input.via TristA(1 = input).
@@ -56,12 +56,12 @@ void User_Initialize(void)
     TRISAbits.TRISA8 = 0; // NOTE: RA8 bit which is the bit that mapped to LED1, and it is configured as output. via TristA (0 = output).
     TRISAbits.TRISA9 = 0;// NOTE: RA9 bit which is the bit that mapped to LED2, and it is configured as output. via TristA.(0 = output)
     
-    AD1CHSbits.CH0SA = 8;
+    AD1CHSbits.CH0SA = 8;  // PDF EX3
     AD1CON1bits.ADON = 1; // NOTE: Turn on the A/D converter, 0 for off, and 1 for on.
 }
 
 // CLEARS THE ENTIRE OLED SCREEN WITH THE BACKGROUND COLOR.
-static void oledC_clearScreen(void) 
+static void oledC_clearScreen(void) // from Oled_example.c
 {    
     uint8_t x;
     uint8_t y;
@@ -78,15 +78,16 @@ static void oledC_clearScreen(void)
 
 
 // SETS THE BACKGROUND COLOR FOR THE OLED SCREEN.
-static void oledC_setBackground(uint16_t color)
+static void oledC_setBackground(uint16_t color) // from Oled_example.c
 {
     background_color = color;
     oledC_clearScreen();
 }
 
 
+// KODI WROTE , oledC_sendCommand() - must use it to prevent flickering from changes.
 // TOGGLES THE DISPLAY MODE BETWEEN NORMAL AND INVERSE
-void changeMode()
+void changeMode() 
 {
     static MODE currentMode =  INVERSE;
 
@@ -97,25 +98,31 @@ void changeMode()
         
         oledC_sendCommand(OLEDC_CMD_SET_DISPLAY_MODE_INVERSE,NULL,0);
     }
-    currentMode = !currentMode;    
-
+    currentMode = !currentMode;  
+    oledC_clearScreen(); 
 }
 
+
+
+
+
+
 // Updates the OLED with the current count value
-void updateCount(int newCount){
+void updateCount(int newCount) // KODI WROTE.
+{
     static int oldCount = 0;
     char buffer[10];
-    sprintf(buffer, "S:%d",oldCount );
+    sprintf(buffer, "S:%d",oldCount ); // turn it into a string.
     oledC_DrawString(10, 60, 2, 2, (uint8_t *)buffer,background_color );
     sprintf(buffer, "S:%d", newCount);
-    oledC_DrawString(10, 60, 2, 2, (uint8_t *)buffer, OLEDC_COLOR_RED);
+    oledC_DrawString(10, 60, 2, 2, (uint8_t *)buffer, OLEDC_COLOR_MAGENTA);
     
     oldCount = newCount;
 }
 
 
 // UPDATES THE OLED WITH THE CURRENT POTENTIOMETER VALUE
-void updatePotentio(int potentio,int oldPotentio)
+void updatePotentio(int potentio,int oldPotentio) // KODI WROTE> 
 {
     char desPotentio[10];
     
@@ -138,7 +145,7 @@ int main(void)
     User_Initialize();
 
     //Set OLED Background color and Clear the display
-    oledC_setBackground(OLEDC_COLOR_ORANGE);
+    oledC_setBackground(OLEDC_COLOR_DARKSEAGREEN);
 
     updateCount(count);
 
@@ -183,15 +190,15 @@ int main(void)
 	//Get potentiometer position and display decimal value
          AD1CON1bits.SAMP = 1; // Samp and hold emplifier are sampling - DATA SHEET.
             
-        for(int i = 0; i < 1000; i++ );
+        for(int i = 0; i < 1000; i++ ); // 1000 cycles for the cable to charge - lecturer said should be enough for it to charge - LEC03 PDF
 
-        AD1CON1bits.SAMP = 0;  // Samp and hold emplifier are holding - DATA SHEET.
+        AD1CON1bits.SAMP = 0;  // stop charging the cable.
             
-        while (!AD1CON1bits.DONE); // while the Analong digital conversion cycle has not started or is in progress
+        while (!AD1CON1bits.DONE); // while the Analong digital conversion cycle has not started or is in progress, dont cointuie the progrma before the conversion ends. (empty while lop)
         potentio = ADC1BUF0; 
         
        
-        if ( abs(potentio - oldPotentio) > 5 )
+        if ( abs(potentio - oldPotentio) > 8 )
         {
             
             updatePotentio(potentio,oldPotentio);
@@ -203,9 +210,29 @@ int main(void)
     }
   return 1;
 }
-/**
- End of File
-*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // GENERAL IMPORTANT NOTES
