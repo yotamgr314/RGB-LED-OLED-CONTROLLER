@@ -5,6 +5,9 @@
 #include "oledDriver/oledC_colors.h"
 #include "oledDriver/oledC_shapes.h"
 
+#define COLOR_DISPLAY_MODE 1
+#define COMPOSITE_DISPLAY_MODE !COLOR_DISPLAY_MODE
+
 // Define modes and states
 typedef enum
 {
@@ -50,7 +53,7 @@ void InitializeHardware(void)
 void ConfigurePWM(void)
 {
     // Red LED (RA0 → RP26)
-    RPOR13 = 13; // OC1
+    RP0R13 = 13; // OC1
     OC1RS = 1023;
     OC1CON2bits.SYNCSEL = 0x1F;
     OC1CON1bits.OCTSEL = 0b111;
@@ -58,7 +61,7 @@ void ConfigurePWM(void)
     OC1CON2bits.TRIGSTAT = 1;
 
     // Green LED (RA1 → RP27)
-    RPOR13bits.RP27R = 14; // OC2
+    RP0R13bits.RP27R = 14; // OC2
     OC2RS = 1023;
     OC2CON2bits.SYNCSEL = 0x1F;
     OC2CON1bits.OCTSEL = 0b111;
@@ -66,7 +69,7 @@ void ConfigurePWM(void)
     OC2CON2bits.TRIGSTAT = 1;
 
     // Blue LED (RC7 → RP23)
-    RPOR11bits.RP23R = 15; // OC3
+    RP0R11bits.RP23R = 15; // OC3
     OC3RS = 1023;
     OC3CON2bits.SYNCSEL = 0x1F;
     OC3CON1bits.OCTSEL = 0b111;
