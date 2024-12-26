@@ -12,38 +12,72 @@ typedef unsigned char DISPLAY_MODE;
 
 static uint16_t current_background_color;
 
+// Forward Declarations
+void UpdateDisplayCounter(int *new_counter);
+void UpdatePotentiometerValue(int *potentiometer_value, int *previous_potentiometer_value);
+void ToggleDisplayMode(int *counter, int *potentiometer_value, int *previous_potentiometer_value, DISPLAY_MODE *current_mode);
+
+void BlueLed()
+{
+    RPOR11bits.RP23R = 15;
+    OC3RS = 1023;
+    OC3CON2bits.SYNCSEL = 0x1F; // self-sync
+    OC3CON2bits.OCTRIG = 0;     // sync mode
+    OC3CON1bits.OCTSEL = 0b111; // FOSC/2
+    OC3CON1bits.OCM = 0b110;    // edge aligned
+    OC3CON2bits.TRIGSTAT = 1;   // Fixed stray '\240'
+}
+
+void RedLed()
+{
+    RPOR13 = 13;
+    OC1RS = 1023;
+    OC1CON2bits.SYNCSEL = 0x1F; // self-sync
+    OC1CON2bits.OCTRIG = 0;     // sync mode
+    OC1CON1bits.OCTSEL = 0b111; // FOSC/2
+    OC1CON1bits.OCM = 0b110;    // edge aligned
+    OC1CON2bits.TRIGSTAT = 1;
+}
+
+void GreenLed()
+{
+    RPOR13bits.RP27R = 14;
+    OC2RS = 1023;
+    OC2CON2bits.SYNCSEL = 0x1F; // self-sync
+    OC2CON2bits.OCTRIG = 0;     // sync mode
+    OC2CON1bits.OCTSEL = 0b111; // FOSC/2
+    OC2CON1bits.OCM = 0b110;    // edge aligned
+    OC2CON2bits.TRIGSTAT = 1;   // Fixed stray '\240'
+}
+
 void InitializeUserHardware(void)
 {
-    TRISBbits.TRISB12 = 1;
-    ANSBbits.ANSB12 = 1;
+    TRISBbits.TRISB12 = 1; // Potentiometer input
+    ANSBbits.ANSB12 = 1;   // Analog input enabled
+
+    // Configure buttons
+    TRISAbits.TRISA11 = 1; // S1 button
+    TRISAbits.TRISA12 = 1; // S2 button
+
+    // Configure LEDs
+    TRISAbits.TRISA8 = 0; // LED1 output
+    TRISAbits.TRISA9 = 0; // LED2 output
+
+    // ADC setup for potentiometer
     AD1CON1bits.SSRC = 0;
     AD1CON1bits.FORM = 0;
     AD1CON1bits.ASAM = 0;
-    AD1CON1bits.ADSIDL = 0;
-    AD1CON1bits.DMABM = 0;
-    AD1CON1bits.DMAEN = 0;
     AD1CON1bits.MODE12 = 0;
-
     AD1CON2 = 0x00;
     AD1CON3bits.ADCS = 0xFF;
     AD1CON3bits.SAMC = 0x10;
-    AD1CON3bits.ADRC = 0x00;
-    AD1CON3bits.EXTSAM = 0x00;
-    AD1CON3bits.PUMPEN = 0x00;
-
-    TRISAbits.TRISA11 = 1;
-    TRISAbits.TRISA12 = 1;
-    TRISAbits.TRISA8 = 0;
-    TRISAbits.TRISA9 = 0;
-
     AD1CHSbits.CH0SA = 8;
     AD1CON1bits.ADON = 1;
 }
 
 static void oledC_clearScreen(void)
 {
-    uint8_t column;
-    uint8_t row;
+    uint8_t column, row;
 
     oledC_setColumnAddressBounds(0, 96);
     oledC_setRowAddressBounds(0, 96);
