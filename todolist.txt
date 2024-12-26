@@ -48,6 +48,12 @@ S1 switch => each press on S1 will toggle between two modes:
     01) "composite display" (displaying all 3 colors).
     02) "color-display" (displays individual color).
 
+
+
+GENERAL STUFF FOR BOTH MODES:
+LED1: will be lighted up as long as S1 is pressed.
+LED2: will be lighted up as long as S2 is pressed.
+
 COLOR DISPLAY
 01) BRIGHTNESS UPDATE:
 potentiometer: adjust the brightness of one color (Red, Green, or Blue).
@@ -64,7 +70,7 @@ Brightness is stored in memory only when S1 or S2 is pressed:
     1) S1: Saves the current brightness and switches to Composite Mode.
     2) S2: Saves the current brightness and switches to the next color.
 
-03) S2: changes the viewed LED color. in a circular manner : RED --> GREEN --> BLUE --> RED. 
+03) S2: changes the viewed LED color. in a circular manner : RED --> GREEN --> BLUE --> RED. DONE
         each press on S2 saves the current color brightness before moving to the new color. (only if the potentiometer has been on the same brightness as the prev lev and then changed.)
 
 
@@ -81,5 +87,7 @@ all the 3 colors are viewed combined, each color intensity is the one stored in 
         5) for example:
             1) If the stored brightness of Red is 800, and the potentiometer reads 512 (50%), then the brightness will be:
                800 * 0.5 = 400. 
-               
+
 S2: has no effect in this mode. 
+
+

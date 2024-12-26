@@ -8,76 +8,42 @@
 // Define modes and states
 typedef enum
 {
-    COLOR_DISPLAY,
-    COMPOSITE_DISPLAY
-} DISPLAY_MODE;
-typedef enum
-{
     RED,
     GREEN,
     BLUE
 } COLOR;
 
-// Global variables for brightness levels and states
-static int red_brightness = 512;
-static int green_brightness = 512;
-static int blue_brightness = 512;
-static DISPLAY_MODE current_mode = COLOR_DISPLAY;
+// Global variables
 static COLOR current_color = RED;
-static int potentiometer_last_value = -1; // To track potentiometer matching stored brightness
 
 // Function prototypes
 void InitializeHardware(void);
 void ConfigurePWM(void);
 void SetLEDIntensity(COLOR color, int value);
-void HandleButtons(void);
-void UpdateOLED(void);
-void ToggleMode(void);
-void CycleColor(void);
-int ReadPotentiometer(void);
-void UpdateCompositeBrightness(int potentiometer);
-void UpdateColorDisplayBrightness(int potentiometer);
-void oledC_clearScreen(void);
+void HandleButtonS2(void);
+void DelayMs(unsigned int milliseconds);
 
-// OLED clear screen function
-void oledC_clearScreen(void)
+// Delay function
+void DelayMs(unsigned int milliseconds)
 {
-    uint8_t column, row;
-
-    oledC_setColumnAddressBounds(0, 96);
-    oledC_setRowAddressBounds(0, 96);
-
-    for (column = 0; column < 96; column++)
+    while (milliseconds--)
     {
-        for (row = 0; row < 96; row++)
-        {
-            oledC_sendColorInt(OLEDC_COLOR_BLACK);
-        }
+        for (volatile unsigned int i = 0; i < 4000; i++)
+            ;
     }
 }
 
 // Initialize ADC, buttons, and LEDs
 void InitializeHardware(void)
 {
-    // Potentiometer (AN12)
-    TRISBbits.TRISB12 = 1;
-    ANSBbits.ANSB12 = 1;
-    AD1CON1bits.SSRC = 0;
-    AD1CON1bits.FORM = 0;
-    AD1CON1bits.ASAM = 0;
-    AD1CON1bits.MODE12 = 0;
-    AD1CON2 = 0x00;
-    AD1CON3bits.ADCS = 0xFF;
-    AD1CHSbits.CH0SA = 12; // AN12
-    AD1CON1bits.ADON = 1;
-
     // Buttons
-    TRISAbits.TRISA11 = 1; // S1
-    TRISAbits.TRISA12 = 1; // S2
+    TRISAbits.TRISA11 = 1; // sets S1 as input
+    TRISAbits.TRISA12 = 1; // stes S2 as input
 
-    // LED Indicators
-    TRISAbits.TRISA8 = 0; // LED1
-    TRISAbits.TRISA9 = 0; // LED2
+    // GPIOs for LEDs
+    TRISAbits.TRISA0 = 0; // sets Ra0 - Red LED (PWM) as output.
+    TRISAbits.TRISA1 = 0; // sets Ra1 - Green LED (PWM) as output.
+    TRISCbits.TRISC7 = 0; // sets Ra7 - Blue LED (PWM) as output.
 }
 
 // Configure PWM for RGB LEDs
@@ -111,6 +77,12 @@ void ConfigurePWM(void)
 // Set brightness for a specific LED
 void SetLEDIntensity(COLOR color, int value)
 {
+    // Turn off all LEDs first
+    OC1R = 0; // Red
+    OC2R = 0; // Green
+    OC3R = 0; // Blue
+
+    // Turn on the specified LED
     switch (color)
     {
     case RED:
@@ -125,114 +97,21 @@ void SetLEDIntensity(COLOR color, int value)
     }
 }
 
-// Read potentiometer value
-int ReadPotentiometer(void)
+// Handle button S2 for color transitions
+void HandleButtonS2(void)
 {
-    AD1CON1bits.SAMP = 1;
-    for (int i = 0; i < 1000; i++)
-        ;
-    AD1CON1bits.SAMP = 0;
-    while (!AD1CON1bits.DONE)
-        ;
-    return ADC1BUF0;
-}
+    static int last_button_state = 1; // 1 = released, 0 = pressed
+    int current_button_state = PORTAbits.RA12;
 
-// Update brightness in composite mode
-void UpdateCompositeBrightness(int potentiometer)
-{
-    float percentage = potentiometer / 1023.0;
-    SetLEDIntensity(RED, red_brightness * percentage);
-    SetLEDIntensity(GREEN, green_brightness * percentage);
-    SetLEDIntensity(BLUE, blue_brightness * percentage);
-}
-
-// Update brightness in color display mode
-void UpdateColorDisplayBrightness(int potentiometer)
-{
-    int *current_brightness;
-    switch (current_color)
+    if (current_button_state == 0 && last_button_state == 1)
     {
-    case RED:
-        current_brightness = &red_brightness;
-        break;
-    case GREEN:
-        current_brightness = &green_brightness;
-        break;
-    case BLUE:
-        current_brightness = &blue_brightness;
-        break;
+        // Button press detected (falling edge)
+        current_color = (current_color == BLUE) ? RED : (COLOR)(current_color + 1);
+        SetLEDIntensity(current_color, 512); // Set to 50% brightness
+        DelayMs(50);                         // Debounce delay
     }
 
-    if (potentiometer == *current_brightness || potentiometer_last_value == *current_brightness)
-    {
-        *current_brightness = potentiometer;
-        SetLEDIntensity(current_color, potentiometer);
-    }
-
-    potentiometer_last_value = potentiometer;
-}
-
-// Toggle between modes
-void ToggleMode(void)
-{
-    current_mode = (current_mode == COLOR_DISPLAY) ? COMPOSITE_DISPLAY : COLOR_DISPLAY;
-    potentiometer_last_value = -1; // Reset tracking for potentiometer
-}
-
-// Cycle through colors
-void CycleColor(void)
-{
-    if (current_mode == COLOR_DISPLAY)
-    {
-        current_color = (current_color == RED) ? GREEN : (current_color == GREEN) ? BLUE
-                                                                                  : RED;
-        potentiometer_last_value = -1; // Reset tracking for potentiometer
-    }
-}
-
-// Update OLED display
-void UpdateOLED(void)
-{
-    oledC_clearScreen();
-
-    if (current_mode == COLOR_DISPLAY)
-    {
-        const char *color_name = (current_color == RED) ? "RED" : (current_color == GREEN) ? "GREEN"
-                                                                                           : "BLUE";
-        char text[20];
-        sprintf(text, "%s: %d", color_name,
-                (current_color == RED) ? red_brightness : (current_color == GREEN) ? green_brightness
-                                                                                   : blue_brightness);
-        oledC_DrawString(10, 10, 2, 2, (uint8_t *)text, OLEDC_COLOR_WHITE);
-    }
-    else
-    {
-        oledC_DrawString(10, 10, 2, 2, (uint8_t *)"COMPOSITE", OLEDC_COLOR_WHITE);
-    }
-}
-
-// Handle button presses
-void HandleButtons(void)
-{
-    if (PORTAbits.RA11 == 0)
-    {                       // S1 pressed
-        LATAbits.LATA8 = 1; // LED1 ON
-        ToggleMode();
-    }
-    else
-    {
-        LATAbits.LATA8 = 0; // LED1 OFF
-    }
-
-    if (PORTAbits.RA12 == 0)
-    {                       // S2 pressed
-        LATAbits.LATA9 = 1; // LED2 ON
-        CycleColor();
-    }
-    else
-    {
-        LATAbits.LATA9 = 0; // LED2 OFF
-    }
+    last_button_state = current_button_state;
 }
 
 // Main function
@@ -242,21 +121,12 @@ int main(void)
     InitializeHardware();
     ConfigurePWM();
 
+    // Set initial LED state
+    SetLEDIntensity(current_color, 512); // Start with Red at 50%
+
     while (1)
     {
-        int potentiometer = ReadPotentiometer();
-        HandleButtons();
-
-        if (current_mode == COLOR_DISPLAY)
-        {
-            UpdateColorDisplayBrightness(potentiometer);
-        }
-        else
-        {
-            UpdateCompositeBrightness(potentiometer);
-        }
-
-        UpdateOLED();
+        HandleButtonS2(); // Check for button press and update color
     }
 
     return 1;
