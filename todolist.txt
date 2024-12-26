@@ -88,6 +88,35 @@ all the 3 colors are viewed combined, each color intensity is the one stored in 
             1) If the stored brightness of Red is 800, and the potentiometer reads 512 (50%), then the brightness will be:
                800 * 0.5 = 400. 
 
+02) Controlling LED Brightness with PWM:
+    1) The RGB LED consists of three colors: Red, Green, and Blue.
+    2) Each color is controlled by a separate PWM channel in the microcontroller.
+    3) The PIC24 microcontroller has three PWM channels, named:
+        1) OC1: For the red channel.
+        2) OC2: For the green channel.
+        3) OC3: For the blue channel.
+    4) Connecting PWM Channels to the Appropriate Pins:
+        1) To control the LED, the PWM channels need to be connected to the correct pins:
+            1) Red (RA0) → Controlled by OC1.
+            2) Green (RA1) → Controlled by OC2.
+            3) Blue (RC7) → Controlled by OC3.
+    5) PPS (Peripheral Pin Select) :
+        1)  is a system that allows assigning hardware functions (like PWM) to specific pins on the microcontroller.
+        2)  For each color, the appropriate PWM function needs to be linked to the corresponding pin using PPS:
+            1) For each color, the appropriate PWM function needs to be linked to the corresponding pin using PPS:
+                1) RA0 is linked to OC1.
+                2) RA1 is linked to OC2.
+                3) RC7 is linked to OC3.
+            2) Steps to Perform the Connection
+            3) Find the RPxx for Each Pin:
+                1) Pins RA0, RA1, and RC7 are connected to specific RPxx values on the platform (e.g., RA0 = RP26).
+                   This information can be found in the board's schematic or the relevant table in the lecture.
+                   Set the PPS Function for Each Pin:
+                   For example, to link OC1 to RA0:
+                   RPOR13 = 13; // Assign RP26 (RA0) to OC1
+
+
+ 
 S2: has no effect in this mode. 
 
 
