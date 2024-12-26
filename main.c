@@ -5,179 +5,170 @@
 #include "oledDriver/oledC.h"
 #include "oledDriver/oledC_colors.h"
 #include "oledDriver/oledC_shapes.h"
-#include <libpic30.h> // For __delay_ms
-
-#define FCY 4000000 // Define instruction cycle frequency
 
 typedef unsigned char DISPLAY_MODE;
-#define MODE_COMPOSITE 0
-#define MODE_COLOR 1
+#define MODE_NORMAL 0
+#define MODE_INVERSE !MODE_NORMAL
 
-// Global Variables
-static uint16_t red_brightness = 512;
-static uint16_t green_brightness = 512;
-static uint16_t blue_brightness = 512;
-static uint8_t current_color = 0; // 0 = Red, 1 = Green, 2 = Blue
-static DISPLAY_MODE current_mode = MODE_COMPOSITE;
+static uint16_t current_background_color;
 
-// Function Declarations
-void ConfigurePWM(void);
-void InitializeUserHardware(void);
-uint16_t ReadPotentiometer(void);
-void ClearOLED(void);
-void UpdateOLEDDisplay(void);
-void UpdateLEDs(void);
-void HandleButtonS1(void);
-void HandleButtonS2(void);
-
-// Configure PWM for LEDs
-void ConfigurePWM(void) {
-    // Red LED (RA0 → RP26 → OC1)
-    RPOR13bits.RP26R = 13; // Assign OC1 to RP26
-    OC1RS = 1023; // Set PWM period
-    OC1CON2bits.SYNCSEL = 0x1F;
-    OC1CON2bits.OCTRIG = 0;
-    OC1CON1bits.OCTSEL = 0b111;
-    OC1CON1bits.OCM = 0b110;
-
-    // Green LED (RA1 → RP27 → OC2)
-    RPOR13bits.RP27R = 14; // Assign OC2 to RP27
-    OC2RS = 1023;
-    OC2CON2bits.SYNCSEL = 0x1F;
-    OC2CON2bits.OCTRIG = 0;
-    OC2CON1bits.OCTSEL = 0b111;
-    OC2CON1bits.OCM = 0b110;
-
-    // Blue LED (RC7 → RP23 → OC3)
-    RPOR11bits.RP23R = 15; // Assign OC3 to RP23
-    OC3RS = 1023;
-    OC3CON2bits.SYNCSEL = 0x1F;
-    OC3CON2bits.OCTRIG = 0;
-    OC3CON1bits.OCTSEL = 0b111;
-    OC3CON1bits.OCM = 0b110;
-}
-
-// Initialize Hardware
-void InitializeUserHardware(void) {
-    // Configure potentiometer as input
+void InitializeUserHardware(void)
+{
     TRISBbits.TRISB12 = 1;
     ANSBbits.ANSB12 = 1;
     AD1CON1bits.SSRC = 0;
     AD1CON1bits.FORM = 0;
     AD1CON1bits.ASAM = 0;
-    AD1CHSbits.CH0SA = 12;
+    AD1CON1bits.ADSIDL = 0;
+    AD1CON1bits.DMABM = 0;
+    AD1CON1bits.DMAEN = 0;
+    AD1CON1bits.MODE12 = 0;
+
+    AD1CON2 = 0x00;
+    AD1CON3bits.ADCS = 0xFF;
+    AD1CON3bits.SAMC = 0x10;
+    AD1CON3bits.ADRC = 0x00;
+    AD1CON3bits.EXTSAM = 0x00;
+    AD1CON3bits.PUMPEN = 0x00;
+
+    TRISAbits.TRISA11 = 1;
+    TRISAbits.TRISA12 = 1;
+    TRISAbits.TRISA8 = 0;
+    TRISAbits.TRISA9 = 0;
+
+    AD1CHSbits.CH0SA = 8;
     AD1CON1bits.ADON = 1;
-
-    // Configure buttons and LEDs
-    TRISAbits.TRISA11 = 1; // S1
-    TRISAbits.TRISA12 = 1; // S2
-    TRISAbits.TRISA8 = 0;  // LED1
-    TRISAbits.TRISA9 = 0;  // LED2
-
-    LATAbits.LATA8 = 0; // Turn off LED1
-    LATAbits.LATA9 = 0; // Turn off LED2
 }
 
-// Read potentiometer value
-uint16_t ReadPotentiometer(void) {
-    AD1CON1bits.SAMP = 1;
-    for (int i = 0; i < 1000; i++); // Delay for sampling
-    AD1CON1bits.SAMP = 0;
-    while (!AD1CON1bits.DONE);
-    return ADC1BUF0;
-}
+static void oledC_clearScreen(void)
+{
+    uint8_t column;
+    uint8_t row;
 
-// Clear OLED Display
-void ClearOLED(void) {
-    uint8_t column, row;
     oledC_setColumnAddressBounds(0, 96);
     oledC_setRowAddressBounds(0, 96);
-    for (column = 0; column < 96; column++) {
-        for (row = 0; row < 96; row++) {
-            oledC_sendColorInt(OLEDC_COLOR_BLACK);
+
+    for (column = 0; column < 96; column++)
+    {
+        for (row = 0; row < 96; row++)
+        {
+            oledC_sendColorInt(current_background_color);
         }
     }
 }
 
-// Update OLED Display
-void UpdateOLEDDisplay(void) {
-    char buffer[20];
-    ClearOLED();
-    if (current_mode == MODE_COMPOSITE) {
-        sprintf(buffer, "Mode: Composite");
-        oledC_DrawString(10, 10, 2, 2, (uint8_t *)buffer, OLEDC_COLOR_WHITE);
-    } else {
-        const char *colors[] = {"Red", "Green", "Blue"};
-        sprintf(buffer, "Mode: Color");
-        oledC_DrawString(10, 10, 2, 2, (uint8_t *)buffer, OLEDC_COLOR_WHITE);
-        sprintf(buffer, "Color: %s", colors[current_color]);
-        oledC_DrawString(10, 30, 2, 2, (uint8_t *)buffer, OLEDC_COLOR_WHITE);
+static void SetOLEDBackground(uint16_t color)
+{
+    if (current_background_color != color)
+    {
+        current_background_color = color;
+        oledC_clearScreen();
     }
 }
 
-// Update LED Brightness
-void UpdateLEDs(void) {
-    uint16_t pot_value = ReadPotentiometer();
-    if (current_mode == MODE_COMPOSITE) {
-        OC1R = (red_brightness * pot_value) / 1023;
-        OC2R = (green_brightness * pot_value) / 1023;
-        OC3R = (blue_brightness * pot_value) / 1023;
-    } else {
-        switch (current_color) {
-            case 0:
-                red_brightness = pot_value;
-                OC1R = red_brightness;
-                break;
-            case 1:
-                green_brightness = pot_value;
-                OC2R = green_brightness;
-                break;
-            case 2:
-                blue_brightness = pot_value;
-                OC3R = blue_brightness;
-                break;
-        }
+void ToggleDisplayMode(int *counter, int *potentiometer_value, int *previous_potentiometer_value, DISPLAY_MODE *current_mode)
+{
+    if (*current_mode == MODE_NORMAL)
+    {
+        oledC_sendCommand(OLEDC_CMD_SET_DISPLAY_MODE_ON, NULL, 0);
+    }
+    else
+    {
+        oledC_sendCommand(OLEDC_CMD_SET_DISPLAY_MODE_INVERSE, NULL, 0);
+    }
+
+    *current_mode = !(*current_mode);
+
+    UpdateDisplayCounter(counter);
+    UpdatePotentiometerValue(potentiometer_value, previous_potentiometer_value);
+}
+
+void UpdateDisplayCounter(int *new_counter)
+{
+    static int last_counter = -1;
+    char text_buffer[10];
+
+    if (last_counter != *new_counter)
+    {
+        sprintf(text_buffer, "S:%3d", last_counter);
+        oledC_DrawString(10, 60, 2, 2, (uint8_t *)text_buffer, current_background_color);
+
+        sprintf(text_buffer, "S:%3d", *new_counter);
+        oledC_DrawString(10, 60, 2, 2, (uint8_t *)text_buffer, OLEDC_COLOR_ROYALBLUE);
+
+        last_counter = *new_counter;
     }
 }
 
-// Handle S1 Button (Mode Toggle)
-void HandleButtonS1(void) {
-    current_mode = (current_mode == MODE_COMPOSITE) ? MODE_COLOR : MODE_COMPOSITE;
-    UpdateOLEDDisplay();
-}
+void UpdatePotentiometerValue(int *potentiometer_value, int *previous_potentiometer_value)
+{
+    static int last_potentiometer = -1;
+    char text_buffer[10];
 
-// Handle S2 Button (Cycle Colors)
-void HandleButtonS2(void) {
-    if (current_mode == MODE_COLOR) {
-        current_color = (current_color + 1) % 3;
-        UpdateOLEDDisplay();
+    if (last_potentiometer != *potentiometer_value)
+    {
+        sprintf(text_buffer, "P:%3d", last_potentiometer);
+        oledC_DrawString(10, 10, 2, 2, (uint8_t *)text_buffer, current_background_color);
+
+        sprintf(text_buffer, "P:%3d", *potentiometer_value);
+        oledC_DrawString(10, 10, 2, 2, (uint8_t *)text_buffer, OLEDC_COLOR_TURQUOISE);
+
+        last_potentiometer = *potentiometer_value;
     }
 }
 
-// Main Function
-int main(void) {
+int main(void)
+{
+    int display_counter = 0, potentiometer = 0;
+    int previous_potentiometer = -1;
+    DISPLAY_MODE current_mode = MODE_INVERSE;
+
     SYSTEM_Initialize();
     InitializeUserHardware();
-    ConfigurePWM();
-    UpdateOLEDDisplay();
 
-    while (1) {
-        if (!PORTAbits.RA11) { // S1 pressed
-            LATAbits.LATA8 = 1; // Turn on LED1
-            HandleButtonS1();
-            __delay_ms(200);
-            LATAbits.LATA8 = 0; // Turn off LED1
+    SetOLEDBackground(OLEDC_COLOR_AZURE);
+
+    UpdateDisplayCounter(&display_counter);
+    UpdatePotentiometerValue(&potentiometer, &previous_potentiometer);
+
+    while (1)
+    {
+        if (PORTAbits.RA11 == 0)
+        {
+            LATAbits.LATA8 = 1;
+        }
+        else if (LATAbits.LATA8 == 1)
+        {
+            LATAbits.LATA8 = 0;
+            display_counter++;
+            UpdateDisplayCounter(&display_counter);
         }
 
-        if (!PORTAbits.RA12) { // S2 pressed
-            LATAbits.LATA9 = 1; // Turn on LED2
-            HandleButtonS2();
-            __delay_ms(200);
-            LATAbits.LATA9 = 0; // Turn off LED2
+        if (PORTAbits.RA12 == 0)
+        {
+            LATAbits.LATA9 = 1;
+        }
+        else if (LATAbits.LATA9 == 1)
+        {
+            LATAbits.LATA9 = 0;
+            ToggleDisplayMode(&display_counter, &potentiometer, &previous_potentiometer, &current_mode);
         }
 
-        UpdateLEDs();
+        AD1CON1bits.SAMP = 1;
+        for (int i = 0; i < 1000; i++)
+            ;
+        AD1CON1bits.SAMP = 0;
+
+        while (!AD1CON1bits.DONE)
+            ;
+        potentiometer = ADC1BUF0;
+
+        if (abs(potentiometer - previous_potentiometer) > 8)
+        {
+            UpdatePotentiometerValue(&potentiometer, &previous_potentiometer);
+            previous_potentiometer = potentiometer;
+        }
     }
 
-    return 0;
+    return 1;
 }
