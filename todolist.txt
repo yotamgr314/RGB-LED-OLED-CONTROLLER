@@ -1,0 +1,85 @@
+IMPLEMENTATION ORDER
+01) Hardware Initialization:
+    01)Set up ADC, PWM, and I/O peripherals.
+    02)Verify hardware functionality for buttons, potentiometer, and RGB LEDs.
+    03)Potentiometer Input Handling:
+
+02) Implement and test ADC to read potentiometer values.
+    RGB LED Control via PWM:
+        01)Implement brightness control for individual LEDs using PWM.
+        02)Verify PWM operation for Red, Green, and Blue LEDs.
+        03)Button Handling:
+
+Detect and debounce S1 and S2.
+Implement mode switching and color cycling functionality.
+Color Display Mode:
+
+Adjust the brightness of the selected color based on the potentiometer value.
+Composite Display Mode:
+
+Display the composite color using stored brightness values and potentiometer percentage.
+LED Indicators:
+
+Add visual feedback for button presses.
+OLED Feedback:
+
+Display mode and brightness information on the OLED screen.
+
+
+
+
+
+
+
+
+GENERAL DESCRIPTION OF THE APP :
+s2 --> switch
+LED1 --> LED indicator.
+LED2 --> LED indicator.
+LED3 --> RGB LED + PWM.
+R10 --> Potentiometer.
+
+01) The user shall be able to use the potentiometer to display and adjust the brightness of each of the 3 LED colors individually.
+02) The user shall be able to view the composite-color of the RGB LED and change its relative brightness.
+03) with the potentiometer.
+04) The mode of operation is selected with the S1 and S2 button.
+
+S1 switch => each press on S1 will toggle between two modes: 
+    01) "composite display" (displaying all 3 colors).
+    02) "color-display" (displays individual color).
+
+COLOR DISPLAY
+01) BRIGHTNESS UPDATE:
+potentiometer: adjust the brightness of one color (Red, Green, or Blue).
+    1) As long as the potentiometer's value is different from the stored brightness value:
+        1) The brightness does not change.
+        2) The LED continues to illuminate at the stored brightness value in memory.
+
+    2) When the potentiometer's value matches the stored brightness value:
+        1) The brightness immediately starts tracking the potentiometer's value.
+        2) The change remains real-time until the next press of S1 or S2 which will lead to save the new value.
+
+02) BRIGHTNESS STORAGE:
+Brightness is stored in memory only when S1 or S2 is pressed:
+    1) S1: Saves the current brightness and switches to Composite Mode.
+    2) S2: Saves the current brightness and switches to the next color.
+
+03) S2: changes the viewed LED color. in a circular manner : RED --> GREEN --> BLUE --> RED. 
+        each press on S2 saves the current color brightness before moving to the new color. (only if the potentiometer has been on the same brightness as the prev lev and then changed.)
+
+
+COMPOSITE DISPLAY
+The LED displays a combination of the three colors: Red, Green, and Blue.
+all the 3 colors are viewed combined, each color intensity is the one stored in the color-display mode.
+01) potentiometer: used to control the overall brightness of the combination (i.e., it affects all three colors together).
+    1) The potentiometer value (0–1023) is converted into a percentage of the stored brightness for each color:
+        1) If the potentiometer reads 0, the total brightness is 0% (the LED is completely off).
+        2) If the potentiometer reads 512, the brightness is 50% of the stored values for each color.
+        3) If the potentiometer reads 1023, the brightness is 100% of the stored values.
+        4)The brightness of each color in Composite Display Mode is calculated as follows:
+          brightness = stored_brightness × (potentiometer / 1023).
+        5) for example:
+            1) If the stored brightness of Red is 800, and the potentiometer reads 512 (50%), then the brightness will be:
+               800 * 0.5 = 400. 
+               
+S2: has no effect in this mode. 
