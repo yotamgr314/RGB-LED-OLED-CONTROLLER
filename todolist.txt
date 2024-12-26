@@ -1,14 +1,14 @@
 IMPLEMENTATION ORDER
 01) Hardware Initialization:
-    01)Set up ADC, PWM, and I/O peripherals.
-    02)Verify hardware functionality for buttons, potentiometer, and RGB LEDs.
-    03)Potentiometer Input Handling:
+    01)Set up ADC, PWM, and I/O peripherals. DONE
+    02)Verify hardware functionality for buttons, potentiometer, and RGB LEDs. DONE
+    03)Potentiometer Input Handling: DONE
 
-02) Implement and test ADC to read potentiometer values.
-    RGB LED Control via PWM:
-        01)Implement brightness control for individual LEDs using PWM.
-        02)Verify PWM operation for Red, Green, and Blue LEDs.
-        03)Button Handling:
+02) Implement and test ADC to read potentiometer values. DONE
+    RGB LED Control via PWM:DONE
+        01)Implement brightness control for individual LEDs using PWM. DONE
+        02)Verify PWM operation for Red, Green, and Blue LEDs. DONE
+        03)Button Handling: DONE
 
 Detect and debounce S1 and S2.
 Implement mode switching and color cycling functionality.

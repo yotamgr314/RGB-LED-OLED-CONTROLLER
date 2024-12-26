@@ -124,7 +124,7 @@ void SetLEDIntensity(COLOR color, int value)
     }
 }
 
-void UpdatePotentiometerValue(int *potentiometer_value, int *previous_potentiometer_value)
+void UpdatePotentiometerValue(int *potentiometer_value, int *previous_potentiometer_value) // COPY PASTE FROM LC04
 {
     static int last_potentiometer = -1;
     char text_buffer[10];
