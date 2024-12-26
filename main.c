@@ -38,7 +38,7 @@ void DelayMs(unsigned int milliseconds)
     }
 }
 
-// Initialize ADC, buttons, and LEDs
+// Initialize ADC, buttons, and LEDs --> SAME INTILIZE FUNCTION FROM LC04, JUST ADDED THE CONFIGURE GPIOS FOR RGB.
 void InitializeHardware(void)
 {
     // Configure Buttons
@@ -73,50 +73,53 @@ void InitializeHardware(void)
 // Configure PWM for RGB LEDs
 void ConfigurePWM(void)
 {
-    // Red LED (RA0 → RP26)
-    RPOR13 = 13; // OC1
-    OC1RS = 1023;
-    OC1CON2bits.SYNCSEL = 0x1F;
-    OC1CON1bits.OCTSEL = 0b111;
-    OC1CON1bits.OCM = 0b110;
-    OC1CON2bits.TRIGSTAT = 1;
+    // Red LED (RA0 → RP26) --> COPY PASTE FROM THE RGB LED PDF
+    RPOR13 = 13;                // Assign the Output Compare 1 (OC1) function to pin RP26 (RA0).
+    OC1RS = 1023;               // Set the PWM period to 1023, defining the full duty cycle.
+    OC1CON2bits.SYNCSEL = 0x1F; // Synchronize the PWM with itself (self-sync mode).
+    OC1CON2bits.OCTRIG = 0;     // Ensure synchronous operation (no trigger required).
+    OC1CON1bits.OCTSEL = 0b111; // Select the clock source as FOSC/2 (system clock divided by 2).
+    OC1CON1bits.OCM = 0b110;    // Set PWM mode as edge-aligned PWM.
+    OC1CON2bits.TRIGSTAT = 1;   // Start the PWM output.
 
-    // Green LED (RA1 → RP27)
-    RPOR13bits.RP27R = 14; // OC2
-    OC2RS = 1023;
-    OC2CON2bits.SYNCSEL = 0x1F;
-    OC2CON1bits.OCTSEL = 0b111;
-    OC2CON1bits.OCM = 0b110;
-    OC2CON2bits.TRIGSTAT = 1;
+    // Green LED (RA1 → RP27) -->  INSPIRED FROM THE RED RGB PDF.
+    RPOR13bits.RP27R = 14;      // Assign the Output Compare 2 (OC2) function to pin RP27 (RA1).
+    OC2RS = 1023;               // Set the PWM period to 1023 for the green LED.
+    OC2CON2bits.SYNCSEL = 0x1F; // Synchronize the PWM with itself (self-sync mode).
+    OC2CON2bits.OCTRIG = 0;     // Ensure synchronous operation (no trigger required).
+    OC2CON1bits.OCTSEL = 0b111; // Select the clock source as FOSC/2 (system clock divided by 2).
+    OC2CON1bits.OCM = 0b110;    // Set PWM mode as edge-aligned PWM.
+    OC2CON2bits.TRIGSTAT = 1;   // Start the PWM output.
 
-    // Blue LED (RC7 → RP23)
-    RPOR11bits.RP23R = 15; // OC3
-    OC3RS = 1023;
-    OC3CON2bits.SYNCSEL = 0x1F;
-    OC3CON1bits.OCTSEL = 0b111;
-    OC3CON1bits.OCM = 0b110;
-    OC3CON2bits.TRIGSTAT = 1;
+    // Blue LED (RC7 → RP23) --> INSPIRED FROM THE RED RGB PDF.
+    RPOR11bits.RP23R = 15;      // Assign the Output Compare 3 (OC3) function to pin RP23 (RC7).
+    OC3RS = 1023;               // Set the PWM period to 1023 for the blue LED.
+    OC3CON2bits.SYNCSEL = 0x1F; // Synchronize the PWM with itself (self-sync mode).
+    OC3CON2bits.OCTRIG = 0;     // Ensure synchronous operation (no trigger required).
+    OC3CON1bits.OCTSEL = 0b111; // Select the clock source as FOSC/2 (system clock divided by 2).
+    OC3CON1bits.OCM = 0b110;    // Set PWM mode as edge-aligned PWM.
+    OC3CON2bits.TRIGSTAT = 1;   // Start the PWM output.
 }
 
 // Set brightness for a specific LED
 void SetLEDIntensity(COLOR color, int value)
 {
     // Turn off all LEDs first
-    OC1R = 0; // Red
-    OC2R = 0; // Green
-    OC3R = 0; // Blue
+    OC1R = 0; // Turn off the Red LED by setting its duty cycle to 0.
+    OC2R = 0; // Turn off the Green LED by setting its duty cycle to 0.
+    OC3R = 0; // Turn off the Blue LED by setting its duty cycle to 0.
 
     // Turn on the specified LED
     switch (color)
     {
     case RED:
-        OC1R = value;
+        OC1R = value; // Set the duty cycle for the Red LED to the given value.
         break;
     case GREEN:
-        OC2R = value;
+        OC2R = value; // Set the duty cycle for the Green LED to the given value.
         break;
     case BLUE:
-        OC3R = value;
+        OC3R = value; // Set the duty cycle for the Blue LED to the given value.
         break;
     }
 }
