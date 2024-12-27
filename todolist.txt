@@ -56,7 +56,7 @@ LED2: will be lighted up as long as S2 is pressed.
 
 COLOR DISPLAY
 01) BRIGHTNESS UPDATE:
-potentiometer: adjust the brightness of one color (Red, Green, or Blue).
+potentiometer: adjust the brightness of one color (Red, Green, or Blue). DONE
     1) As long as the potentiometer's value is different from the stored brightness value:
         1) The brightness does not change.
         2) The LED continues to illuminate at the stored brightness value in memory.
